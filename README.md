@@ -1,12 +1,12 @@
 # NLP Named Entity Recognition Web App
 
-This project builds a Named Entity Recognition system for detecting person names using a Maximum Entropy classifier and deploys it as an interactive Streamlit web application.
+This project builds a person-name recognition system using a Maximum Entropy-style classifier with custom linguistic features. The model is trained on a CoNLL-style named entity recognition dataset and deployed through an interactive Streamlit web app.
 
 ## Project Overview
 
-Named Entity Recognition is a core Natural Language Processing task that identifies named entities such as person names, organizations, and locations from text.
+Named Entity Recognition is a core Natural Language Processing task that identifies entities such as person names, organizations, and locations from text.
 
-In this project, I focus on person-name recognition using BIO tagging:
+This project focuses on person-name recognition using BIO tagging:
 
 - B-PER: beginning of a person name
 - I-PER: inside a person name
@@ -15,24 +15,26 @@ In this project, I focus on person-name recognition using BIO tagging:
 ## Methods
 
 - Token-level classification
-- Maximum Entropy classifier
+- Maximum Entropy-style classifier using Logistic Regression
 - Custom linguistic feature engineering
-- Precision, recall, and F1-score evaluation
+- Dictionary-based baseline comparison
+- Precision, recall, F1-score, and confusion matrix evaluation
 - Streamlit web app deployment
 
-## Features
+```markdown
+- Dictionary-based baseline comparison
 
-The model uses linguistic and contextual features including:
+## Feature Engineering
 
+The model uses handcrafted linguistic and contextual features, including:
+
+- Lowercase word
 - Word shape
 - Capitalization
 - Prefixes and suffixes
-- Previous and next words
+- Previous token features
+- Next token features
 - Sentence boundary indicators
-
-## Tech Stack
-
-Python, scikit-learn, pandas, Streamlit, NLTK
 
 ## Dataset
 
@@ -48,8 +50,6 @@ A small sample dataset is also included for debugging and reproducibility.
 
 ## Evaluation Results
 
-The Maximum Entropy-style classifier was evaluated using precision, recall, and F1-score.
-
 | Label | Precision | Recall | F1-score | Support |
 |---|---:|---:|---:|---:|
 | B-PER | 0.91 | 0.75 | 0.82 | 1617 |
@@ -57,17 +57,6 @@ The Maximum Entropy-style classifier was evaluated using precision, recall, and 
 | O | 0.99 | 0.99 | 0.99 | 43662 |
 
 Overall accuracy: **0.98**
-
-## Model Interpretation
-
-The model performs well at identifying person-name tokens, especially inside-name tokens (`I-PER`). The lower recall for `B-PER` suggests that the model sometimes misses the beginning of person names, which is a common challenge in token-level NER.
-
-## Limitations
-
-- The current model focuses only on person-name recognition.
-- Non-person entities are treated as outside labels.
-- The model relies on handcrafted linguistic features rather than contextual embeddings.
-- Future improvements could include CRF, BiLSTM, or transformer-based models such as BERT.
 
 ## Baseline Comparison
 
@@ -81,3 +70,29 @@ The dictionary baseline extracts person-name tokens from the training set and pr
 | Maximum Entropy Classifier | 0.983 | 0.899 | 0.983 |
 
 The Maximum Entropy classifier performs better because it uses contextual and linguistic features rather than relying only on whether a token has appeared as a name in the training data.
+
+## Streamlit Demo
+
+The Streamlit app allows users to enter a sentence and view:
+
+- Detected person names
+- Highlighted text
+- Token-level BIO predictions
+- Model details
+
+## Limitations
+
+- The current model focuses only on person-name recognition.
+- Non-person entities are treated as outside labels.
+- The model relies on handcrafted linguistic features rather than contextual embeddings.
+- The model may miss rare or unseen single-token names, such as names that do not appear frequently in the training dataset.
+- Person names with both first and last names are generally easier to detect than isolated first names.
+- Future improvements could train a full multi-class NER model for PER, ORG, LOC, and MISC instead of converting non-person labels to `O`.
+
+## How to Run
+
+Install dependencies:
+
+```bash
+pip install -r requirements.txt
+

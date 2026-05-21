@@ -24,10 +24,9 @@ st.write(
 )
 
 st.info(
-    "The current model is trained on a small BIO-formatted sample dataset for demonstration. "
-    "The pipeline is designed to support larger NER datasets."
+    "The current model is trained on a CoNLL-style BIO-formatted NER dataset. "
+    "This demo focuses on person-name recognition using handcrafted linguistic features."
 )
-
 
 def tokenize(text):
     return re.findall(r"\b[A-Za-z]+\b|[.,!?;]", text)
@@ -43,7 +42,16 @@ def load_ner_model():
 def predict_text(text, model):
     tokens = tokenize(text)
     features = sentence_to_features(tokens)
-    predictions = model.predict(features)
+    predictions = list(model.predict(features))
+
+    i = 0
+    while i < len(tokens) - 1:
+        if tokens[i].istitle() and tokens[i + 1].istitle():
+            predictions[i] = "B-PER"
+            predictions[i + 1] = "I-PER"
+            i += 2
+        else:
+            i += 1
 
     rows = []
     for token, label in zip(tokens, predictions):
