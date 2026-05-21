@@ -21,9 +21,6 @@ This project focuses on person-name recognition using BIO tagging:
 - Precision, recall, F1-score, and confusion matrix evaluation
 - Streamlit web app deployment
 
-```markdown
-- Dictionary-based baseline comparison
-
 ## Feature Engineering
 
 The model uses handcrafted linguistic and contextual features, including:
