@@ -6,7 +6,7 @@ from src.features import sentence_to_features
 from src.model import load_model
 
 
-TEST_PATH = "data/sample_test.conll"
+TEST_PATH = "data/test.conll"
 MODEL_PATH = "models/maxent_ner.pkl"
 RESULTS_PATH = "results/evaluation_report.txt"
 

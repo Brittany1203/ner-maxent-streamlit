@@ -3,7 +3,7 @@ from src.features import sentence_to_features
 from src.model import build_maxent_model, save_model
 
 
-TRAIN_PATH = "data/sample_train.conll"
+TRAIN_PATH = "data/train.conll"
 MODEL_PATH = "models/maxent_ner.pkl"
 
 
