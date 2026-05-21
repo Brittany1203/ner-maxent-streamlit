@@ -33,3 +33,38 @@ The model uses linguistic and contextual features including:
 ## Tech Stack
 
 Python, scikit-learn, pandas, Streamlit, NLTK
+
+## Dataset
+
+This project uses a CoNLL-style named entity recognition dataset converted into BIO format. Since the project focuses on person-name recognition, non-person entity labels such as ORG, LOC, and MISC are converted to `O`.
+
+The dataset includes:
+
+- 14,041 training sentences
+- 203,621 training tokens
+- A separate test set for model evaluation
+
+A small sample dataset is also included for debugging and reproducibility.
+
+## Evaluation Results
+
+The Maximum Entropy-style classifier was evaluated using precision, recall, and F1-score.
+
+| Label | Precision | Recall | F1-score | Support |
+|---|---:|---:|---:|---:|
+| B-PER | 0.91 | 0.75 | 0.82 | 1617 |
+| I-PER | 0.89 | 0.88 | 0.88 | 1156 |
+| O | 0.99 | 0.99 | 0.99 | 43662 |
+
+Overall accuracy: **0.98**
+
+## Model Interpretation
+
+The model performs well at identifying person-name tokens, especially inside-name tokens (`I-PER`). The lower recall for `B-PER` suggests that the model sometimes misses the beginning of person names, which is a common challenge in token-level NER.
+
+## Limitations
+
+- The current model focuses only on person-name recognition.
+- Non-person entities are treated as outside labels.
+- The model relies on handcrafted linguistic features rather than contextual embeddings.
+- Future improvements could include CRF, BiLSTM, or transformer-based models such as BERT.
