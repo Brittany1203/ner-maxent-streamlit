@@ -68,3 +68,16 @@ The model performs well at identifying person-name tokens, especially inside-nam
 - Non-person entities are treated as outside labels.
 - The model relies on handcrafted linguistic features rather than contextual embeddings.
 - Future improvements could include CRF, BiLSTM, or transformer-based models such as BERT.
+
+## Baseline Comparison
+
+To evaluate whether the Maximum Entropy classifier improves over a simple rule-based approach, I compared it with a dictionary-based baseline.
+
+The dictionary baseline extracts person-name tokens from the training set and predicts a token as `B-PER` or `I-PER` if it appears in the learned name dictionary.
+
+| Model | Accuracy | Macro F1 | Weighted F1 |
+|---|---:|---:|---:|
+| Dictionary Baseline | 0.851 | 0.476 | 0.879 |
+| Maximum Entropy Classifier | 0.983 | 0.899 | 0.983 |
+
+The Maximum Entropy classifier performs better because it uses contextual and linguistic features rather than relying only on whether a token has appeared as a name in the training data.
