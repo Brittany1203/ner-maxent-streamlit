@@ -1,6 +1,14 @@
-import streamlit as st
+import os
 import re
+import streamlit as st
 import pandas as pd
+
+from src.features import sentence_to_features
+from src.model import load_model
+
+
+MODEL_PATH = "models/maxent_ner.pkl"
+
 
 st.set_page_config(
     page_title="NER MaxEnt Web App",
@@ -9,100 +17,69 @@ st.set_page_config(
 )
 
 st.title("Named Entity Recognition Web App")
+
 st.write(
-    "This app identifies possible person names in text. "
-    "The current version is a rule-based baseline. "
-    "It will later be upgraded to a Maximum Entropy classifier with custom linguistic features."
+    "This app identifies person names using a Maximum Entropy-style classifier "
+    "trained with custom linguistic features."
 )
 
 st.info(
-    "Baseline rule: detect capitalized name-like tokens, excluding common sentence-start words and locations/organizations."
+    "The current model is trained on a small BIO-formatted sample dataset for demonstration. "
+    "The pipeline is designed to support larger NER datasets."
 )
 
-text = st.text_area(
-    "Enter a sentence:",
-    "Brittany and Aiko are doing great. Barack Obama met Angela Merkel in Berlin."
-)
-
-STOPWORDS = {
-    "The", "A", "An", "This", "That", "These", "Those",
-    "I", "You", "He", "She", "It", "We", "They",
-    "In", "On", "At", "By", "For", "With", "From", "To",
-    "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday",
-    "January", "February", "March", "April", "May", "June", "July", "August",
-    "September", "October", "November", "December",
-    "Berlin", "London", "Paris", "Macau", "Hong", "Kong", "China",
-    "Apple", "Google", "Microsoft", "University"
-}
 
 def tokenize(text):
     return re.findall(r"\b[A-Za-z]+\b|[.,!?;]", text)
 
-def is_name_like(token):
-    return (
-        re.match(r"^[A-Z][a-z]+$", token) is not None
-        and token not in STOPWORDS
-        and len(token) > 1
-    )
 
-def rule_based_ner(text):
+@st.cache_resource
+def load_ner_model():
+    if not os.path.exists(MODEL_PATH):
+        return None
+    return load_model(MODEL_PATH)
+
+
+def predict_text(text, model):
     tokens = tokenize(text)
-    predictions = []
+    features = sentence_to_features(tokens)
+    predictions = model.predict(features)
 
-    i = 0
-    while i < len(tokens):
-        token = tokens[i]
+    rows = []
+    for token, label in zip(tokens, predictions):
+        rows.append({
+            "Token": token,
+            "Predicted Label": label
+        })
 
-        if is_name_like(token):
-            name_tokens = [token]
-            j = i + 1
+    return rows
 
-            while j < len(tokens) and is_name_like(tokens[j]):
-                name_tokens.append(tokens[j])
-                j += 1
 
-            full_name = " ".join(name_tokens)
-
-            for k, name_token in enumerate(name_tokens):
-                label = "B-PER" if k == 0 else "I-PER"
-                predictions.append({
-                    "Token": name_token,
-                    "Label": label,
-                    "Entity": full_name
-                })
-
-            i = j
-        else:
-            if re.match(r"^[A-Za-z]+$", token):
-                predictions.append({
-                    "Token": token,
-                    "Label": "O",
-                    "Entity": ""
-                })
-            i += 1
-
-    return predictions
-
-def extract_entities(predictions):
+def extract_entities(rows):
     entities = []
-    current = []
+    current_entity = []
 
-    for row in predictions:
-        if row["Label"] == "B-PER":
-            if current:
-                entities.append(" ".join(current))
-            current = [row["Token"]]
-        elif row["Label"] == "I-PER":
-            current.append(row["Token"])
+    for row in rows:
+        token = row["Token"]
+        label = row["Predicted Label"]
+
+        if label == "B-PER":
+            if current_entity:
+                entities.append(" ".join(current_entity))
+            current_entity = [token]
+        elif label == "I-PER":
+            if current_entity:
+                current_entity.append(token)
         else:
-            if current:
-                entities.append(" ".join(current))
-                current = []
+            if current_entity:
+                entities.append(" ".join(current_entity))
+                current_entity = []
 
-    if current:
-        entities.append(" ".join(current))
+    if current_entity:
+        entities.append(" ".join(current_entity))
 
     return entities
+
 
 def highlight_text(text, entities):
     highlighted = text
@@ -114,28 +91,42 @@ def highlight_text(text, entities):
         )
     return highlighted
 
-if st.button("Detect Names"):
-    predictions = rule_based_ner(text)
-    entities = extract_entities(predictions)
 
-    st.subheader("Detected Person Names")
+model = load_ner_model()
 
-    if entities:
-        for entity in entities:
-            st.success(entity)
-    else:
-        st.warning("No person names detected.")
-
-    st.subheader("Highlighted Text")
-    st.markdown(highlight_text(text, entities))
-
-    st.subheader("Token-level BIO Predictions")
-    df = pd.DataFrame(predictions)
-    st.dataframe(df, use_container_width=True)
-
-    st.subheader("Next Model Upgrade")
-    st.write(
-        "This rule-based system is used as a baseline. "
-        "The next version will train a Maximum Entropy classifier using features such as "
-        "capitalization, word shape, prefixes/suffixes, and context window."
+if model is None:
+    st.error("Model file not found. Please run `python train.py` first.")
+else:
+    text = st.text_area(
+        "Enter a sentence:",
+        "Brittany met Tim Cook in Macau."
     )
+
+    if st.button("Detect Names"):
+        rows = predict_text(text, model)
+        entities = extract_entities(rows)
+
+        st.subheader("Detected Person Names")
+
+        if entities:
+            for entity in entities:
+                st.success(entity)
+        else:
+            st.warning("No person names detected.")
+
+        st.subheader("Highlighted Text")
+        st.markdown(highlight_text(text, entities))
+
+        st.subheader("Token-level BIO Predictions")
+        df = pd.DataFrame(rows)
+        st.dataframe(df, use_container_width=True)
+
+        st.subheader("Model Details")
+        st.write(
+            "Model: Maximum Entropy-style classifier using Logistic Regression "
+            "with handcrafted token-level features."
+        )
+        st.write(
+            "Features: lowercase word, word shape, capitalization, prefixes, suffixes, "
+            "previous token features, next token features, and sentence boundary indicators."
+        )
